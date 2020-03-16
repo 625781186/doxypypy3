@@ -16,15 +16,15 @@ class RE:
     _implementsRE = regexpCompile(r"^(\s*)(?:zope\.)?(?:interface\.)?"
                                   r"(?:module|class|directly)?"
                                   r"(?:Provides|Implements)\(\s*(.+)\s*\)",
-                                  IGNORECASE)
+                                  IGNORECASE) ## zope
     _classRE        = regexpCompile(r"^\s*class\s+(\S+)\s*\((\S+)\):")
     _interfaceRE    = regexpCompile(r"^\s*class\s+(\S+)\s*\(\s*(?:zope\.)?"
                                  r"(?:interface\.)?"
-                                 r"Interface\s*\)\s*:", IGNORECASE)
+                                 r"Interface\s*\)\s*:", IGNORECASE) ## zope
     _attributeRE    = regexpCompile(r"^(\s*)(\S+)\s*=\s*(?:zope\.)?"
                                  r"(?:interface\.)?"
                                  r"Attribute\s*\(['\"]{1,3}(.*)['\"]{1,3}\)",
-                                 IGNORECASE)
+                                 IGNORECASE) ## zope
 
     _singleLineREs  = {
         ' @author: '  : regexpCompile(r"^(\s*Authors?:\s*)(.*)$", IGNORECASE),

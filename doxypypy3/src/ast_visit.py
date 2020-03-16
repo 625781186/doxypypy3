@@ -8,7 +8,7 @@ from .compile import RE, linesep
 
 
 class AstVisit:
-    def __init__(self, lines:list, options, inFilename:str):
+    def __init__(self, lines: list, options, inFilename: str):
         """Initialize a few class variables in preparation for our walk."""
         self.lines = lines
         self.options = options
@@ -18,6 +18,15 @@ class AstVisit:
         ic.configureOutput(includeContext=True)
         ic.enable() if self.options.debug else ic.disable()
 
+    def _getFullPathName(self, containingNodes):
+        """
+        Returns the full node hierarchy rooted at module name.
+
+        The list representing the full path through containing nodes
+        (starting with the module itself) is returned.
+        """
+        assert isinstance(containingNodes, list)
+        return [(self.options.fullPathNamespace, 'module')] + containingNodes
 
     def generic_visit(self, node, **kwargs):
         """
@@ -50,15 +59,7 @@ class AstVisit:
         visitor = getattr(self, method, self.generic_visit)
         return visitor(node, containingNodes=containingNodes)
 
-    def _getFullPathName(self, containingNodes):
-        """
-        Returns the full node hierarchy rooted at module name.
-
-        The list representing the full path through containing nodes
-        (starting with the module itself) is returned.
-        """
-        assert isinstance(containingNodes, list)
-        return [(self.options.fullPathNamespace, 'module')] + containingNodes
+    ## ------------------------------ ------------------------------
 
     def visit_Module(self, node, **kwargs):
         """
@@ -72,8 +73,91 @@ class AstVisit:
         if get_docstring(node):
             self._processDocstring(node)
         # Visit any contained nodes (in this case pretty much everything).
-        self.generic_visit(node, containingNodes=kwargs.get('containingNodes',
-                                                            []))
+        self.generic_visit(node,
+                           containingNodes=kwargs.get('containingNodes', []))
+
+    def visit_ClassDef(self, node, **kwargs):
+        """
+        Handles class definitions within code.
+
+        Process the docstring.  Note though that in Python Class definitions
+        are used to define interfaces in addition to classes.
+        If a class definition appears to be an interface definition tag it as an
+        interface definition for Doxygen.  Otherwise tag it as a class
+        definition for Doxygen.
+        """
+
+        lineNum = node.lineno - 1
+        # Push either 'interface' or 'class' onto our containing nodes
+        # hierarchy so we can keep track of context.  This will let us tell
+        # if a function is a method or an interface method definition or if
+        # a class is fully contained within another class.
+        containingNodes = kwargs.get('containingNodes', []) or []
+
+        match = RE._interfaceRE.match(self.lines[lineNum])
+        if match:
+
+            ic("# Interface {0.name}{1}".format(node, linesep))
+            containingNodes.append((node.name, 'interface'))
+        else:
+
+            ic("# Class {0.name}{1}".format(node, linesep))
+            containingNodes.append((node.name, 'class'))
+
+        if self.options.topLevelNamespace:
+            fullPathNamespace = self._getFullPathName(containingNodes)
+            contextTag = '.'.join(pathTuple[0] for pathTuple in fullPathNamespace)
+            tail = '@namespace {0}'.format(contextTag)
+        else:
+            tail = ''
+
+        # Class definitions have one Doxygen-significant special case:
+        # interface definitions.
+        if match:
+            contextTag = '{0}{1}# @interface {2}'.format(tail,
+                                                         linesep,
+                                                         match.group(1))
+        else:
+            contextTag = tail
+
+        contextTag = self._processMembers(node, contextTag)
+        if get_docstring(node):
+            self._processDocstring(node, contextTag,
+                                   containingNodes=containingNodes)
+        # Visit any contained nodes.
+        self.generic_visit(node, containingNodes=containingNodes)
+        # Remove the item we pushed onto the containing nodes hierarchy.
+        containingNodes.pop()
+
+    def visit_FunctionDef(self, node, **kwargs):
+        """
+        Handles function definitions within code.
+
+        Process a function's docstring, keeping well aware of the function's
+        context and whether or not it's part of an interface definition.
+        """
+
+        ic("# Function {0.name}{1}".format(node, linesep))
+        # Push either 'interface' or 'class' onto our containing nodes
+        # hierarchy so we can keep track of context.  This will let us tell
+        # if a function is nested within another function or even if a class
+        # is nested within a function.
+        containingNodes = kwargs.get('containingNodes', []) or []
+        containingNodes.append((node.name, 'function'))
+        if self.options.topLevelNamespace:
+            fullPathNamespace = self._getFullPathName(containingNodes)
+            contextTag = '.'.join(pathTuple[0] for pathTuple in fullPathNamespace)
+            modifiedContextTag = self._processMembers(node, contextTag)
+            tail = '@namespace {0}'.format(modifiedContextTag)
+        else:
+            tail = self._processMembers(node, '')
+        if get_docstring(node):
+            self._processDocstring(node, tail,
+                                   containingNodes=containingNodes)
+        # Visit any contained nodes.
+        self.generic_visit(node, containingNodes=containingNodes)
+        # Remove the item we pushed onto the containing nodes hierarchy.
+        containingNodes.pop()
 
     def visit_Assign(self, node, **kwargs):
         """
@@ -100,7 +184,7 @@ class AstVisit:
             )
 
             ic("# Attribute {0.id}{1}".format(node.targets[0],
-                                                            linesep))
+                                              linesep))
         if isinstance(node.targets[0], Name):
             match = RE._indentRE.match(self.lines[lineNum])
             indentStr = match and match.group(1) or ''
@@ -134,87 +218,6 @@ class AstVisit:
                 match.group(1), match.group(2), linesep,
                 self.lines[lineNum].rstrip())
 
-            ic("# Implements {0}{1}".format(match.group(1),
-                                                          linesep))
+            ic("# Implements {0}{1}".format(match.group(1), linesep))
         # Visit any contained nodes.
         self.generic_visit(node, containingNodes=kwargs['containingNodes'])
-    # import snoop
-    # #snoop.install(out="snoop.log")
-    # @snoop.snoop(depth=2)
-    def visit_FunctionDef(self, node, **kwargs):
-        """
-        Handles function definitions within code.
-
-        Process a function's docstring, keeping well aware of the function's
-        context and whether or not it's part of an interface definition.
-        """
-
-        ic("# Function {0.name}{1}".format(node, linesep))
-        # Push either 'interface' or 'class' onto our containing nodes
-        # hierarchy so we can keep track of context.  This will let us tell
-        # if a function is nested within another function or even if a class
-        # is nested within a function.
-        containingNodes = kwargs.get('containingNodes', []) or []
-        containingNodes.append((node.name, 'function'))
-        if self.options.topLevelNamespace:
-            fullPathNamespace = self._getFullPathName(containingNodes)
-            contextTag = '.'.join(pathTuple[0] for pathTuple in fullPathNamespace)
-            modifiedContextTag = self._processMembers(node, contextTag)
-            tail = '@namespace {0}'.format(modifiedContextTag)
-        else:
-            tail = self._processMembers(node, '')
-        if get_docstring(node):
-            self._processDocstring(node, tail,
-                                   containingNodes=containingNodes)
-        # Visit any contained nodes.
-        self.generic_visit(node, containingNodes=containingNodes)
-        # Remove the item we pushed onto the containing nodes hierarchy.
-        containingNodes.pop()
-
-    def visit_ClassDef(self, node, **kwargs):
-        """
-        Handles class definitions within code.
-
-        Process the docstring.  Note though that in Python Class definitions
-        are used to define interfaces in addition to classes.
-        If a class definition appears to be an interface definition tag it as an
-        interface definition for Doxygen.  Otherwise tag it as a class
-        definition for Doxygen.
-        """
-        lineNum = node.lineno - 1
-        # Push either 'interface' or 'class' onto our containing nodes
-        # hierarchy so we can keep track of context.  This will let us tell
-        # if a function is a method or an interface method definition or if
-        # a class is fully contained within another class.
-        containingNodes = kwargs.get('containingNodes', []) or []
-        match = RE._interfaceRE.match(self.lines[lineNum])
-        if match:
-
-            ic("# Interface {0.name}{1}".format(node, linesep))
-            containingNodes.append((node.name, 'interface'))
-        else:
-
-            ic("# Class {0.name}{1}".format(node, linesep))
-            containingNodes.append((node.name, 'class'))
-        if self.options.topLevelNamespace:
-            fullPathNamespace = self._getFullPathName(containingNodes)
-            contextTag = '.'.join(pathTuple[0] for pathTuple in fullPathNamespace)
-            tail = '@namespace {0}'.format(contextTag)
-        else:
-            tail = ''
-        # Class definitions have one Doxygen-significant special case:
-        # interface definitions.
-        if match:
-            contextTag = '{0}{1}# @interface {2}'.format(tail,
-                                                         linesep,
-                                                         match.group(1))
-        else:
-            contextTag = tail
-        contextTag = self._processMembers(node, contextTag)
-        if get_docstring(node):
-            self._processDocstring(node, contextTag,
-                                   containingNodes=containingNodes)
-        # Visit any contained nodes.
-        self.generic_visit(node, containingNodes=containingNodes)
-        # Remove the item we pushed onto the containing nodes hierarchy.
-        containingNodes.pop()
