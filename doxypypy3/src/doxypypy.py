@@ -386,7 +386,6 @@ class AstWalker(AstVisit, ast.NodeVisitor, ):
         ## @formatter:off ↓
         # If we have a docstring, extract information from it.
         if self.docLines:
-            
             # Get rid of the docstring delineators.
             self.docLines[0]  = RE._docstrMarkerRE.sub('', self.docLines[0])
             self.docLines[-1] = RE._docstrMarkerRE.sub('', self.docLines[-1])
@@ -409,22 +408,21 @@ class AstWalker(AstVisit, ast.NodeVisitor, ):
 
             __strip = whitespace + '#'
             _len_docLines = len(self.docLines)
-            one = self.docLines[1]
             judge1 = lambda :_len_docLines == 1
-            judge2 = lambda :_len_docLines >= 2  # len(self.docLines) > 1
-            judge3 = lambda :one.strip(__strip) == ''
-            judge4 = lambda :one.strip(__strip).startswith('@')
+            judge2 = lambda :_len_docLines > 1  # len(self.docLines) > 1
+            judge3 = lambda :self.docLines[1].strip(__strip) == ''
+            judge4 = lambda :self.docLines[1].strip(__strip).startswith('@')
 
             if judge1() or (judge2() and (judge3() or judge4())):
                 self.docLines[0] = "## @brief {0}".format(self.docLines[0].lstrip('#'))
-                if len(self.docLines) > 1 and self.docLines[1] == '# @par':
+                if judge2() and self.docLines[1] == '# @par':
                     self.docLines[1] = '#'
 
         if defLines:
             match = RE._indentRE.match(defLines[0])
             indentStr = match and match.group(1) or ''
             self.docLines = [
-                             RE._newlineRE.sub(indentStr + '#', docLine.replace("#        ", "# "))
+                             RE._newlineRE.sub(indentStr + '#', docLine)
                              for docLine in self.docLines
                             ]
 
@@ -442,10 +440,10 @@ class AstWalker(AstVisit, ast.NodeVisitor, ):
             fullPathNamespace = self._getFullPathName(containingNodes)
             parentType = fullPathNamespace[-2][1]
 
-            if (typeName == 'FunctionDef' and parentType == 'interface'
-                    or fullPathNamespace[-1][1] == 'interface'):
-                defLines[-1] = '{0}{1}{2}pass'.format(defLines[-1], linesep, indentStr)
-
+            if typeName == 'FunctionDef' and parentType == 'interface' \
+                    or fullPathNamespace[-1][1] == 'interface':
+                defLines[-1] = '{0}{1}{2}pass'.format(defLines[-1],
+                                                      linesep, indentStr)
             elif typeName == 'ClassDef' and self.options.autobrief :
                 # If we're parsing docstrings separate out class attribute
                 # definitions to get better Doxygen output.
@@ -465,8 +463,7 @@ class AstWalker(AstVisit, ast.NodeVisitor, ):
                     if firstVarLineNum < len(self.docLines):
                         indentLineNum = endLineNum
                         indentStr = ''
-
-                        while indentStr != '' and indentLineNum < len(self.lines):
+                        while not indentStr and indentLineNum < len(self.lines):
                             match = RE._indentRE.match(self.lines[indentLineNum])
                             indentStr = match and match.group(1) or ''
                             indentLineNum += 1
@@ -474,7 +471,7 @@ class AstWalker(AstVisit, ast.NodeVisitor, ):
                         varLines = [
                                     '{0}{1}'.format(linesep, docLine).replace(linesep, linesep + indentStr)
                                     for docLine in self.docLines[firstVarLineNum: lastVarLineNum]
-                                   ]
+                                    ]
 
                         defLines.extend(varLines)
 

@@ -592,10 +592,11 @@ class TestDoxypypy(unittest.TestCase):
         inFilenameBase = splitext(basename(inFilename))[0]
         fullPathNamespace = inFilenameBase.replace(sep, '.')
         trials = (
+            #########* 'autobrief autocode debug fullPathNamespace topLevelNamespace tablength'
             # ('.out', (True, True, False, fullPathNamespace, inFilenameBase, 4)),
             # ('.outnc', (True, False, False, fullPathNamespace, inFilenameBase, 4)),
-            ('.outnn', (True, True, False, fullPathNamespace, None, 4)),
-            # ('.outbare', (False, False, False, fullPathNamespace, None, 4))
+            ('.outnn', (True, True, False, fullPathNamespace, None, 4)), # √
+            ('.outbare', (False, False, False, fullPathNamespace, None, 4)),  # √
         )
         for options in trials:
             output = self.readAndParseFile(inFilename,

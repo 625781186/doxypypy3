@@ -138,9 +138,9 @@ class AstVisit:
                                                           linesep))
         # Visit any contained nodes.
         self.generic_visit(node, containingNodes=kwargs['containingNodes'])
-    import snoop
-    #snoop.install(out="snoop.log")
-    @snoop.snoop(depth=2)
+    # import snoop
+    # #snoop.install(out="snoop.log")
+    # @snoop.snoop(depth=2)
     def visit_FunctionDef(self, node, **kwargs):
         """
         Handles function definitions within code.
