@@ -1,17 +1,23 @@
 # coding=utf-8
 
 from ast import iter_fields, AST, Name, get_docstring
-from sys import stderr
+
+from icecream import ic
+
 from .compile import RE, linesep
 
 
 class AstVisit:
-    def __init__(self, lines, options, inFilename):
+    def __init__(self, lines:list, options, inFilename:str):
         """Initialize a few class variables in preparation for our walk."""
         self.lines = lines
         self.options = options
         self.inFilename = inFilename
         self.docLines = []
+
+        ic.configureOutput(includeContext=True)
+        ic.enable() if self.options.debug else ic.disable()
+
 
     def generic_visit(self, node, **kwargs):
         """
@@ -61,9 +67,8 @@ class AstVisit:
         Process the module-level docstring and create appropriate Doxygen tags
         if autobrief option is set.
         """
-        if self.options.debug:
-            stderr.write("# Module {0}{1}".format(self.options.fullPathNamespace,
-                                                  linesep))
+
+        ic("# Module {0}{1}".format(self.options.fullPathNamespace, linesep))
         if get_docstring(node):
             self._processDocstring(node)
         # Visit any contained nodes (in this case pretty much everything).
@@ -93,8 +98,8 @@ class AstVisit:
                 match.group(3),
                 self.lines[lineNum].rstrip()
             )
-            if self.options.debug:
-                stderr.write("# Attribute {0.id}{1}".format(node.targets[0],
+
+            ic("# Attribute {0.id}{1}".format(node.targets[0],
                                                             linesep))
         if isinstance(node.targets[0], Name):
             match = RE._indentRE.match(self.lines[lineNum])
@@ -128,12 +133,14 @@ class AstVisit:
             self.lines[lineNum] = '{0}## @implements {1}{2}{0}{3}{2}'.format(
                 match.group(1), match.group(2), linesep,
                 self.lines[lineNum].rstrip())
-            if self.options.debug:
-                stderr.write("# Implements {0}{1}".format(match.group(1),
+
+            ic("# Implements {0}{1}".format(match.group(1),
                                                           linesep))
         # Visit any contained nodes.
         self.generic_visit(node, containingNodes=kwargs['containingNodes'])
-
+    import snoop
+    #snoop.install(out="snoop.log")
+    @snoop.snoop(depth=2)
     def visit_FunctionDef(self, node, **kwargs):
         """
         Handles function definitions within code.
@@ -141,8 +148,8 @@ class AstVisit:
         Process a function's docstring, keeping well aware of the function's
         context and whether or not it's part of an interface definition.
         """
-        if self.options.debug:
-            stderr.write("# Function {0.name}{1}".format(node, linesep))
+
+        ic("# Function {0.name}{1}".format(node, linesep))
         # Push either 'interface' or 'class' onto our containing nodes
         # hierarchy so we can keep track of context.  This will let us tell
         # if a function is nested within another function or even if a class
@@ -182,12 +189,12 @@ class AstVisit:
         containingNodes = kwargs.get('containingNodes', []) or []
         match = RE._interfaceRE.match(self.lines[lineNum])
         if match:
-            if self.options.debug:
-                stderr.write("# Interface {0.name}{1}".format(node, linesep))
+
+            ic("# Interface {0.name}{1}".format(node, linesep))
             containingNodes.append((node.name, 'interface'))
         else:
-            if self.options.debug:
-                stderr.write("# Class {0.name}{1}".format(node, linesep))
+
+            ic("# Class {0.name}{1}".format(node, linesep))
             containingNodes.append((node.name, 'class'))
         if self.options.topLevelNamespace:
             fullPathNamespace = self._getFullPathName(containingNodes)

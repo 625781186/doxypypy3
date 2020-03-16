@@ -8,18 +8,18 @@ if dirname(__file__):
     chdir(dirname(__file__))
 
 setup(
-    name='doxypypy',
-    version='0.8.8.6',
+    name='doxypypy3',
+    version='0.0.1',
     description='A Doxygen filter for Python',
     long_description=open(join(dirname(__file__), 'README.rst')).read(),
-    keywords='Doxygen filter Python documentation',
+    keywords="Doxygen's input-filter of python language.",
     author='Eric W. Brown',
-    url='https://github.com/Feneric/doxypypy',
+    url='https://github.com/625781186/doxypypy3',
     packages=find_packages(),
-    test_suite='doxypypy.test.test_doxypypy',
+    test_suite='doxypypy3.test.test_doxypypy',
     entry_points={
         'console_scripts': [
-            'doxypypy = doxypypy.doxypypy:main'
+            'doxypypy3 = doxypypy3.main:main'
         ]
     },
     classifiers=[
@@ -35,5 +35,9 @@ setup(
         'Operating System :: Unix',
         'Programming Language :: Python',
         'Topic :: Software Development :: Documentation'
-    ]
+    ],
+    install_requires=[
+        'icecream',
+        'goto-statement',
+    ],
 )

@@ -24,9 +24,11 @@ if __name__ == '__main__':
 
     path.append('doxypypy')
     chdir(normpath(join(getcwd(), dirname(__file__), '..', '..')))
+    print("-------__main__-------")
     from doxypypy.doxypypy import AstWalker
 else:
-    from ..doxypypy import AstWalker
+    print("-------doxypypy3-------")
+    from ..src.doxypypy import AstWalker
 
 
 class TestDoxypypy(unittest.TestCase):
@@ -56,7 +58,8 @@ class TestDoxypypy(unittest.TestCase):
                 '## @brief Here is the brief.\n# @namespace dummy.testFunctionOneLine',
                 'def testFunctionOneLine():'
             ]
-        }, {
+        },
+        {
             'name'          : 'onelineclass',
             'visitor'       : 'visit_ClassDef',
             'inputCode'     : '''class testClassOneLine(object):
@@ -65,7 +68,8 @@ class TestDoxypypy(unittest.TestCase):
                 '## @brief Here is the brief.\n# @namespace dummy.testClassOneLine',
                 'class testClassOneLine(object):'
             ]
-        }, {
+        },
+        {
             'name'          : 'basicfunction',
             'visitor'       : 'visit_FunctionDef',
             'inputCode'     : '''def testFunctionBrief():
@@ -80,7 +84,8 @@ class TestDoxypypy(unittest.TestCase):
                 '#                it has multiple lines.\n# @namespace dummy.testFunctionBrief',
                 'def testFunctionBrief():'
             ]
-        }, {
+        },
+        {
             'name'          : 'basicclass',
             'visitor'       : 'visit_ClassDef',
             'inputCode'     : '''class testClassBrief(object):
@@ -95,7 +100,8 @@ class TestDoxypypy(unittest.TestCase):
                 '#                it has multiple lines.\n# @namespace dummy.testClassBrief',
                 'class testClassBrief(object):'
             ]
-        }, {
+        },
+        {
             'name'          : 'basicfunctionnobrief',
             'visitor'       : 'visit_FunctionDef',
             'inputCode'     : '''def testFunctionNoBrief():
@@ -106,7 +112,8 @@ class TestDoxypypy(unittest.TestCase):
                 '#                it has multiple lines.\n# @namespace dummy.testFunctionNoBrief',
                 'def testFunctionNoBrief():'
             ]
-        }, {
+        },
+        {
             'name'          : 'basicclassnobrief',
             'visitor'       : 'visit_ClassDef',
             'inputCode'     : '''class testClassNoBrief(object):
@@ -133,7 +140,8 @@ class TestDoxypypy(unittest.TestCase):
                 '# @param\t\targ\ta test argument.\n# @namespace dummy.testFunctionArg',
                 'def testFunctionArg(arg):'
             ]
-        }, {
+        },
+        {
             'name'          : 'multipleargs',
             'visitor'       : 'visit_FunctionDef',
             'inputCode'     : '''def testFunctionArgs(arg1, arg2, arg3):
@@ -150,7 +158,8 @@ class TestDoxypypy(unittest.TestCase):
                 '# @param\t\targ3\tyet another test argument.\n# @namespace dummy.testFunctionArgs',
                 'def testFunctionArgs(arg1, arg2, arg3):'
             ]
-        }, {
+        },
+        {
             'name'          : 'multiplelineargs',
             'visitor'       : 'visit_FunctionDef',
             'inputCode'     : '''def testFunctionArgsMulti(
@@ -191,7 +200,8 @@ class TestDoxypypy(unittest.TestCase):
                 'class testClassAttr(object):',
                 '\n## @property\t\tattr\n# a test attribute.'
             ]
-        }, {
+        },
+        {
             'name'          : 'multipleattrs',
             'visitor'       : 'visit_ClassDef',
             'inputCode'     : '''class testClassArgs(object):
@@ -224,7 +234,8 @@ class TestDoxypypy(unittest.TestCase):
                 '#                Good stuff.\n# @namespace dummy.testFunctionReturns',
                 'def testFunctionReturns():'
             ]
-        }, {
+        },
+        {
             'name'          : 'yields',
             'visitor'       : 'visit_FunctionDef',
             'inputCode'     : '''def testFunctionYields():
@@ -253,7 +264,8 @@ class TestDoxypypy(unittest.TestCase):
                 '# @exception\t\tMyException\tbang bang a boom.\n# @namespace dummy.testFunctionRaisesOne',
                 'def testFunctionRaisesOne():'
             ]
-        }, {
+        },
+        {
             'name'          : 'multipleraises',
             'visitor'       : 'visit_FunctionDef',
             'inputCode'     : '''def testFunctionRaisesMultiple():
@@ -270,7 +282,8 @@ class TestDoxypypy(unittest.TestCase):
                 '# @exception\t\tMyException3\tsplatter.\n# @namespace dummy.testFunctionRaisesMultiple',
                 'def testFunctionRaisesMultiple():'
             ]
-        }, {
+        },
+        {
             'name'          : 'oneraisesclass',
             'visitor'       : 'visit_ClassDef',
             'inputCode'     : '''class testClassRaisesOne(object):
@@ -283,7 +296,8 @@ class TestDoxypypy(unittest.TestCase):
                 '# @exception\t\tMyException\tbang bang a boom.\n# @namespace dummy.testClassRaisesOne',
                 'class testClassRaisesOne(object):'
             ]
-        }, {
+        },
+        {
             'name'          : 'multipleraisesclass',
             'visitor'       : 'visit_ClassDef',
             'inputCode'     : '''class testClassRaisesMultiple(object):
@@ -601,7 +615,7 @@ class TestDoxypypy(unittest.TestCase):
         """
         Test the basic example included in PEP 257.
         """
-        sampleName = 'doxypypy/test/sample_pep.py'
+        sampleName = 'doxypypy3/test/sample_pep.py'
         self.compareAgainstGoldStandard(sampleName)
 
     def test_privacyProcessing(self):
@@ -609,56 +623,56 @@ class TestDoxypypy(unittest.TestCase):
         Test an example with different combinations of public, protected, and
         private.
         """
-        sampleName = 'doxypypy/test/sample_privacy.py'
+        sampleName = 'doxypypy3/test/sample_privacy.py'
         self.compareAgainstGoldStandard(sampleName)
 
     def test_googleProcessing(self):
         """
         Test the examples in the Google Python Style Guide.
         """
-        sampleName = 'doxypypy/test/sample_google.py'
+        sampleName = 'doxypypy3/test/sample_google.py'
         self.compareAgainstGoldStandard(sampleName)
 
     def test_rawdocstringProcessing(self):
         """
         Test raw docstrings.
         """
-        sampleName = 'doxypypy/test/sample_rawdocstring.py'
+        sampleName = 'doxypypy3/test/sample_rawdocstring.py'
         self.compareAgainstGoldStandard(sampleName)
 
     def test_sectionsProcessing(self):
         """
         Test arbitrary sections handling.
         """
-        sampleName = 'doxypypy/test/sample_sections.py'
+        sampleName = 'doxypypy3/test/sample_sections.py'
         self.compareAgainstGoldStandard(sampleName)
 
     def test_docExampleProcessing(self):
         """
         Test the basic example used in the doxypypy docs.
         """
-        sampleName = 'doxypypy/test/sample_docexample.py'
+        sampleName = 'doxypypy3/test/sample_docexample.py'
         self.compareAgainstGoldStandard(sampleName)
 
     def test_interfaceProcessing(self):
         """
         Test an example with ZOPE style interfaces.
         """
-        sampleName = 'doxypypy/test/sample_interfaces.py'
+        sampleName = 'doxypypy3/test/sample_interfaces.py'
         self.compareAgainstGoldStandard(sampleName)
 
     def test_maze(self):
         """
         Test a basic example inspired by the Commodore one-liner.
         """
-        sampleName = 'doxypypy/test/sample_maze.py'
+        sampleName = 'doxypypy3/test/sample_maze.py'
         self.compareAgainstGoldStandard(sampleName)
 
     def test_utf8_bom(self):
         """
         Test a trivial UTF-8 file with a BOM.
         """
-        sampleName = 'doxypypy/test/sample_utf8bom.py'
+        sampleName = 'doxypypy3/test/sample_utf8bom.py'
         self.compareAgainstGoldStandard(sampleName, encoding="UTF-8-SIG")
 
 
